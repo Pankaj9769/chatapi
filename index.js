@@ -20,7 +20,18 @@ const io = new Server(server, {
   },
 });
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173", // Your local frontend URL for development
+  // Your production frontend URL
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
+    credentials: true,
+  })
+);
 app.use("/api/auth", authRouter);
 app.use("/api", userRouter);
 

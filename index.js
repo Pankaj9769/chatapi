@@ -13,8 +13,10 @@ connect();
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: ["http://localhost:5173/", "http://localhost:5173"],
     methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true,
   },
 });
 app.use(express.json());

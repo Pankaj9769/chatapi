@@ -13,7 +13,7 @@ connect();
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173/", "https://chat-ui-va8r.vercel.app/"],
+    origin: ["https://chat-ui-va8r.vercel.app/"],
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true,
@@ -21,7 +21,7 @@ const io = new Server(server, {
 });
 app.use(express.json());
 const allowedOrigins = [
-  "http://localhost:5173", // Your local frontend URL for development
+  // "http://localhost:5173", // Your local frontend URL for development
   "https://chat-ui-va8r.vercel.app/", // Your production frontend URL
 ];
 

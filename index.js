@@ -152,6 +152,7 @@ app.use(
     methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
     // allowedHeaders: true,
+    allowedHeaders: true,
   })
 );
 
@@ -160,6 +161,8 @@ const io = new Server(server, {
     origin: allowedOrigins, // Same CORS origin rules for WebSocket
     methods: ["GET", "POST"],
     credentials: true,
+    allowedHeaders: true,
+    allowedOrigins: true,
   },
 });
 

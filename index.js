@@ -151,6 +151,7 @@ app.use(
     origin: allowedOrigins, // Allow requests from these origins
     methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+    // allowedHeaders: true,
   })
 );
 

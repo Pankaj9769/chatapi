@@ -143,26 +143,36 @@ connect();
 // Add CORS Middleware before routes and socket.io setup
 const allowedOrigins = [
   "https://chat-ui-va8r.vercel.app", // Your production frontend URL
-  "http://localhost:5173", // Your local frontend URL for development
+  // "http://localhost:5173", // Your local frontend URL for development
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins, // Allow requests from these origins
-    methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
-    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-    // allowedHeaders: true,
-    allowedHeaders: true,
+    origin: "*",
+    methods: "*",
+    allowedHeaders: "*",
+    exposedHeaders: "*",
+    credentials: true,
   })
 );
+
+// app.use(
+//   cors({
+//     origin: allowedOrigins, // Allow requests from these origins
+//     methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
+//     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+//     // allowedHeaders: true,
+//     // allowedHeaders: true,
+//   })
+// );
 
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins, // Same CORS origin rules for WebSocket
     methods: ["GET", "POST"],
     credentials: true,
-    allowedHeaders: true,
-    allowedOrigins: true,
+    // allowedHeaders: true,
+    // allowedOrigins: true,
   },
 });
 

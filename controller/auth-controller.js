@@ -1,12 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { userModel } = require("../model/userModel");
-const { Client, Account } = require("node-appwrite");
-const client = new Client()
-  .setProject(process.env.AppWriteProjectId)
-  .setEndpoint(process.env.AppWriteEndpoint)
-  .setKey(process.env.AppWriteAPIKey); // Replace with your project ID
 
-const account = new Account(client);
 const register = async (req, res) => {
   const userInfo = req.body;
 
@@ -91,39 +85,34 @@ const user = async (req, res) => {
 };
 
 const uploadProfileImage = async (req, res) => {
-  // The uploaded file from form
-  const { email, responseId } = req.body; // The email to associate with the profile image
-
-  try {
-    // Upload the file to Appwrite Storage
-    // const response = await storage.createFile(
-    //   process.env.AppWriteBuckedId,
-    //   file.filename,
-    //   fs.createReadStream(file.path)
-    // );
-
-    // Get the file URL from Appwrite
-    const fileUrl = `${process.env.APPWRITE_ENDPOINT}/v1/storage/buckets/${process.env.APPWRITE_BUCKET_ID}/files/${responseId}/view`;
-
-    // Find user by email and update profile image URL
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Update the user's profile image URL
-    user.profileImage = fileUrl;
-    await user.save();
-
-    // Respond with success and file URL
-    res.status(200).json({
-      message: "Profile image uploaded successfully",
-      fileUrl: fileUrl, // Send back the image URL
-    });
-  } catch (error) {
-    console.error("Error uploading file to Appwrite:", error);
-    res.status(500).json({ error: "Failed to upload image" });
-  }
+  // // The uploaded file from form
+  // const { email, responseId } = req.body; // The email to associate with the profile image
+  // try {
+  //   // Upload the file to Appwrite Storage
+  //   // const response = await storage.createFile(
+  //   //   process.env.AppWriteBuckedId,
+  //   //   file.filename,
+  //   //   fs.createReadStream(file.path)
+  //   // );
+  //   // Get the file URL from Appwrite
+  //   const fileUrl = `${process.env.APPWRITE_ENDPOINT}/v1/storage/buckets/${process.env.APPWRITE_BUCKET_ID}/files/${responseId}/view`;
+  //   // Find user by email and update profile image URL
+  //   const user = await userModel.findOne({ email });
+  //   if (!user) {
+  //     return res.status(404).json({ error: "User not found" });
+  //   }
+  //   // Update the user's profile image URL
+  //   user.profileImage = fileUrl;
+  //   await user.save();
+  //   // Respond with success and file URL
+  //   res.status(200).json({
+  //     message: "Profile image uploaded successfully",
+  //     fileUrl: fileUrl, // Send back the image URL
+  //   });
+  // } catch (error) {
+  //   console.error("Error uploading file to Appwrite:", error);
+  //   res.status(500).json({ error: "Failed to upload image" });
+  // }
 };
 
 module.exports = {

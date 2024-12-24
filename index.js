@@ -9,8 +9,6 @@ const server = createServer(app);
 const cors = require("cors");
 const { userRouter } = require("./route/user-route");
 const { Message } = require("./model/messageModel");
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 // const bodyParser = require("body-parser");
 // app.use(bodyParser.json({ limit: "50mb" })); // Adjust the size limit as needed
 
@@ -55,7 +53,7 @@ const io = new Server(server, {
   },
 });
 
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api", userRouter);

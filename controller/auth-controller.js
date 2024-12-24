@@ -16,12 +16,12 @@ const register = async (req, res) => {
 
   try {
     const { email, password, name } = userInfo;
-    const appWriteUser = await account.create(
-      "unique()",
-      email,
-      password,
-      name
-    );
+    // const appWriteUser = await account.create(
+    //   "unique()",
+    //   email,
+    //   password,
+    //   name
+    // );
     const doesExist = await userModel.findOne({ email: userInfo.email });
     if (doesExist) {
       return res.status(400).json({
@@ -36,7 +36,7 @@ const register = async (req, res) => {
       name: userInfo.name,
       email: userInfo.email,
       password: hashedPassword,
-      appWriteId: appWriteUser.$id,
+      // appWriteId: appWriteUser.$id,
     };
 
     await userModel.create(user);
@@ -70,7 +70,6 @@ const login = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      userId: user.appWriteId,
     };
 
     res.status(200).json({ user: newUser, token });

@@ -17,8 +17,10 @@ const { Message } = require("./model/messageModel");
 
 connect();
 
-// Add CORS Middleware before routes and socket.io setup
+// Add CORS Middleware b
+// efore routes and socket.io setup
 const allowedOrigins = [
+  "https://chat-ui-2j8f.vercel.app/",
   "https://chat-ui-va8r.vercel.app", // Your production frontend URL
   "http://localhost:5173", // Your local frontend URL for development
 ];
@@ -66,11 +68,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("answer", ({ answer, roomId }) => {
-    socket.to(roomId).emit("answer", { answer });
+    socket.broadcast.to(roomId).emit("answer", { answer });
   });
 
   socket.on("ice-candidate", ({ candidate, roomId }) => {
-    socket.to(roomId).emit("ice-candidate", { candidate });
+    socket.broadcast.to(roomId).emit("ice-candidate", { candidate });
   });
 
   socket.on("typing", (data) => {

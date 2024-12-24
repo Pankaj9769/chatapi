@@ -1,6 +1,12 @@
 const bcrypt = require("bcryptjs");
 const { userModel } = require("../model/userModel");
+const { Client, Account } = require("node-appwrite");
+const client = new Client()
+  .setProject(process.env.AppWriteProjectId)
+  .setEndpoint(process.env.AppWriteEndpoint)
+  .setKey(process.env.AppWriteAPIKey); // Replace with your project ID
 
+const account = new Account(client);
 const register = async (req, res) => {
   const userInfo = req.body;
 
@@ -9,6 +15,13 @@ const register = async (req, res) => {
   }
 
   try {
+    const { email, password, name } = userInfo;
+    const appWriteUser = await account.create(
+      "unique()",
+      email,
+      password,
+      name
+    );
     const doesExist = await userModel.findOne({ email: userInfo.email });
     if (doesExist) {
       return res.status(400).json({
@@ -23,9 +36,11 @@ const register = async (req, res) => {
       name: userInfo.name,
       email: userInfo.email,
       password: hashedPassword,
+      appWriteId: appWriteUser.$id,
     };
 
     await userModel.create(user);
+
     res.status(201).json({ response: "Registered Successfully" });
   } catch (error) {
     console.error("Error during registration:", error);
@@ -55,6 +70,7 @@ const login = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      userId: user.appWriteId,
     };
 
     res.status(200).json({ user: newUser, token });
@@ -75,183 +91,45 @@ const user = async (req, res) => {
   }
 };
 
-const addToWishlist = async (req, res) => {
-  console.log("4");
-  const user = req.user;
-  const id = req.params.id;
+const uploadProfileImage = async (req, res) => {
+  // The uploaded file from form
+  const { email, responseId } = req.body; // The email to associate with the profile image
 
-  const findUser = await userModel.findOne({ email: user.email });
-  findUser.wishlist.push(id);
-  // console.log(findUser);
-  const response = await userModel.findOneAndUpdate(
-    { email: user.email },
-    { wishlist: findUser.wishlist },
-    { new: true }
-  );
-
-  res.json({ response });
-};
-
-const removeFromWishlist = async (req, res) => {
-  console.log("5");
-  const user = req.user;
-  const id = req.params.id;
-
-  const findUser = await userModel.findOne({ email: user.email });
-  findUser.wishlist = findUser.wishlist.filter((product) => product != id);
-  // console.log(findUser);
-  const response = await userModel.findOneAndUpdate(
-    { email: user.email },
-    { wishlist: findUser.wishlist },
-    { new: true }
-  );
-
-  res.json({ response });
-};
-
-const addInBag = async (req, res) => {
-  console.log("6");
-  const user = req.user;
-  const id = req.params.id;
-  // console.log("reached");
-  const findUser = await userModel.findOne({ email: user.email });
-  findUser.bag.push(id);
   try {
-    const response = await userModel.findOneAndUpdate(
-      { email: user.email },
-      { bag: findUser.bag },
-      { new: true }
-    );
-    // console.log("THE UPDATED BAG->", response.bag);
-    res.json({ response });
-  } catch (error) {
-    res.json({ response: error });
-  }
-};
+    // Upload the file to Appwrite Storage
+    // const response = await storage.createFile(
+    //   process.env.AppWriteBuckedId,
+    //   file.filename,
+    //   fs.createReadStream(file.path)
+    // );
 
-const removeFromBag = async (req, res) => {
-  console.log("7");
-  const user = req.user;
-  const id = req.params.id;
+    // Get the file URL from Appwrite
+    const fileUrl = `${process.env.APPWRITE_ENDPOINT}/v1/storage/buckets/${process.env.APPWRITE_BUCKET_ID}/files/${responseId}/view`;
 
-  const findUser = await userModel.findOne({ email: user.email });
-  findUser.bag = findUser.bag.filter((product) => product != id);
-  // console.log(findUser);
-  const response = await userModel.findOneAndUpdate(
-    { email: user.email },
-    { bag: findUser.bag },
-    { new: true }
-  );
-
-  res.status(200).json({ response });
-};
-
-const removeAllFromBag = async (req, res) => {
-  console.log("8");
-  const user = req.user;
-  try {
-    const response = await userModel.findOneAndUpdate(
-      { email: user.email },
-      { $set: { bag: [] } },
-      { new: true }
-    );
-
-    if (response) {
-      console.log("resoosee:" + response);
-      res.status(200).json({ message: "Bag cleared successfully", response });
-    } else {
-      res.status(404).json({ message: "User not found" });
+    // Find user by email and update profile image URL
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
-  } catch (error) {
-    console.log("resoosee:" + response);
-    res.status(400).json({ error: error.message });
-  }
-};
 
-const addAddress = async (req, res) => {
-  console.log("9");
-  const user = req.user;
-  const address = req.body;
+    // Update the user's profile image URL
+    user.profileImage = fileUrl;
+    await user.save();
 
-  try {
-    const findUser = await userModel.findOne({ email: user.email });
-    findUser.address.push(address);
-    const response = await userModel.findOneAndUpdate(
-      { email: user.email },
-      {
-        address: findUser.address,
-      },
-      {
-        new: true,
-      }
-    );
-
-    res.status(200).json({ response });
-  } catch (error) {
-    res.status(400).json({ error });
-  }
-};
-
-const removeAddress = async (req, res) => {
-  console.log("10");
-  const user = req.user;
-  const id = req.params.id;
-
-  try {
-    const findUser = await userModel.findOne({ email: user.email });
-
-    findUser.address = findUser.address.filter((address, index) => {
-      return Number(index) !== Number(id);
+    // Respond with success and file URL
+    res.status(200).json({
+      message: "Profile image uploaded successfully",
+      fileUrl: fileUrl, // Send back the image URL
     });
-    // console.log("After->" + findUser.address.length);
-    const response = await userModel.findOneAndUpdate(
-      { email: user.email },
-      {
-        address: findUser.address,
-      },
-      {
-        new: true,
-      }
-    );
-
-    res.status(200).json({ response });
   } catch (error) {
-    res.status(400).json({ error });
+    console.error("Error uploading file to Appwrite:", error);
+    res.status(500).json({ error: "Failed to upload image" });
   }
 };
-
-const addOrder = async (req, res) => {
-  console.log("11");
-  const user = req.user;
-  const body = req.body;
-  // console.log(body);
-  const findUser = await userModel.findOne({ email: user.email });
-
-  body.forEach((element) => {
-    findUser.orders.push(element);
-  });
-  const response = await userModel.findOneAndUpdate(
-    { email: user.email },
-    {
-      orders: findUser.orders,
-    },
-    { new: true }
-  );
-  res.status(200).json({ response });
-};
-const removeOrder = () => {};
 
 module.exports = {
   register,
   login,
   user,
-  addToWishlist,
-  removeFromWishlist,
-  addInBag,
-  removeFromBag,
-  addAddress,
-  removeAddress,
-  addOrder,
-  removeOrder,
-  removeAllFromBag,
+  uploadProfileImage,
 };

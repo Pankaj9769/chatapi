@@ -13,6 +13,12 @@ const userSchema = mongoose.Schema(
       required: true,
       unique: true,
     },
+    // appWriteId: {
+    //   type: String,
+    // },
+    // profileImage: {
+    //   type: String,
+    // },
     password: {
       type: String,
       required: true,
@@ -25,7 +31,7 @@ const userSchema = mongoose.Schema(
 
 userSchema.methods.generateToken = function () {
   const token = jwt.sign(
-    { _id: this._id, email: this.email },
+    { _id: this._id, email: this.email, appWriteId: this.appWriteId },
     process.env.JWT_KEY,
     { expiresIn: "1h" }
   );

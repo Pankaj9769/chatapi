@@ -19,4 +19,6 @@ const getUser = (req, res) => {
   }
 };
 
+// const uploadImage = ;
+
 module.exports = { getAllUsers, getUser };

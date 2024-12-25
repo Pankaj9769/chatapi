@@ -60,61 +60,128 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api", userRouter);
 
+const emailToSocketId = new Map();
+const socketIdToEmail = new Map();
+
 io.on("connection", (socket) => {
   console.log(`Socket Created`);
 
-  socket.on("offer", ({ offer, roomId }) => {
-    socket.broadcast.to(roomId).emit("offer", { offer, roomId });
+  socket.on("register", ({ userId }) => {
+    emailToSocketId.set(userId, socket.id);
+    socketIdToEmail.set(socket.id, userId);
+
+    console.log(
+      `User with email ${socketIdToEmail.get(
+        socket.id
+      )} is now connected with socketId ${emailToSocketId.get(userId)}`
+    );
   });
 
-  socket.on("answer", ({ answer, roomId }) => {
-    socket.broadcast.to(roomId).emit("answer", { answer });
+  socket.on("sendMessage", async ({ message, from, to }) => {
+    try {
+      const sortedIds = [from, to].sort().join("_");
+      const msg = new Message({
+        room: sortedIds,
+        sender: from,
+        receiver: to,
+        message: message,
+      });
+      await msg.save();
+      socket.to(emailToSocketId.get(to)).emit("receiveMessage", msg);
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   });
 
-  socket.on("ice-candidate", ({ candidate, roomId }) => {
-    socket.broadcast.to(roomId).emit("ice-candidate", { candidate });
+  socket.on("fetchChatHistory", async ({ from, to }) => {
+    const sortedIds = [from, to].sort().join("_");
+    const response = await Message.find({ room: sortedIds }).sort({
+      timestamp: 1,
+    });
+    socket.emit("chatHistory", { messages: response });
   });
 
-  socket.on("typing", (data) => {
-    const sortedIds = [data.sender, data.receiver].sort().join("_");
-    socket.to(sortedIds).emit("typingIndicator", data.sender);
+  socket.on("typing", ({ from, to }) => {
+    // const sortedIds = [data.sender, data.receiver].sort().join("_");
+    socket.to(emailToSocketId.get(to)).emit("typingIndicator", { from });
   });
 
-  socket.on("notTyping", (data) => {
-    socket.broadcast.emit("notTypingIndicator", data.sender);
+  socket.on("notTyping", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("notTypingIndicator", { from });
   });
+
+  socket.on("online", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("online", { from });
+  });
+
+  socket.on("offline", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("offline", { from });
+  });
+
+  socket.on("user:call", ({ from, to }) => {
+    console.log("from,to");
+    console.log(from, to);
+    socket.to(emailToSocketId.get(to._id)).emit("call:incoming", { from });
+  });
+
+  socket.on("call:hangup", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("call:hungup");
+  });
+
+  socket.on("user:call:cancel", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("user:call:cancelled");
+  });
+
+  socket.on("user:call:pickup", ({ from, to }) => {
+    socket.to(emailToSocketId.get(to)).emit("user:call:pickedUp", { from });
+  });
+
+  socket.on("offer", ({ from, to, offer }) => {
+    console.log("offer->");
+    console.log(offer, from);
+
+    socket
+      .to(emailToSocketId.get(to))
+      .emit("user:offer", { offer, from: socket.id });
+  });
+
+  socket.on("answer", ({ to, ans }) => {
+    console.log("answer->");
+    console.log(ans, to);
+    socket.to(to).emit("answer", { from: socket.id, ans });
+  });
+
+  socket.on("peer:nego:needed", ({ to, offer }) => {
+    console.log("nego sent");
+    socket.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+  });
+
+  socket.on("peer:nego:done", ({ to, ans }) => {
+    console.log("nego received");
+    socket.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
+
+  // socket.on("peer:nego:needed", ({ offer, to }) => {
+  //   console.log("nego needed-");
+
+  //   socket.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+  // });
+
+  // socket.on("peer:nego:final", ({ ans, to }) => {
+  //   console.log("nego needed-");
+
+  //   socket.to(to).emit("peer:nego:done", { from: socket.id, ans });
+  // });
 
   socket.on("joinRoom", async (data) => {
     try {
       const sortedIds = [data.sender, data.receiver].sort().join("_");
-      io.to(sortedIds).emit("online", data.sender);
+
       socket.join(sortedIds);
 
-      const response = await Message.find({ room: sortedIds }).sort({
-        timestamp: 1,
-      });
-
-      socket.emit("chatHistory", { messages: response });
       console.log(`${socket.id} joined room: ${sortedIds}`);
     } catch (err) {
       console.error("Error fetching chat history:", err);
-    }
-  });
-
-  socket.on("sendMessage", async (data) => {
-    try {
-      const sortedIds = [data.sender, data.receiver].sort().join("_");
-      const msg = new Message({
-        room: sortedIds,
-        sender: data.sender,
-        receiver: data.receiver,
-        message: data.message,
-      });
-
-      await msg.save();
-      io.to(sortedIds).emit("receiveMessage", msg);
-    } catch (err) {
-      console.error("Error sending message:", err);
     }
   });
 

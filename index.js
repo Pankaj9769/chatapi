@@ -137,7 +137,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("offer", ({ from, to, offer }) => {
-    console.log("offer->");
+    console.log("offer interm->");
     console.log(offer, from);
 
     socket
@@ -146,7 +146,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("answer", ({ to, ans }) => {
-    console.log("answer->");
+    console.log("answer interm->");
     console.log(ans, to);
     socket.to(to).emit("answer", { from: socket.id, ans });
   });
@@ -161,17 +161,9 @@ io.on("connection", (socket) => {
     socket.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
 
-  // socket.on("peer:nego:needed", ({ offer, to }) => {
-  //   console.log("nego needed-");
-
-  //   socket.to(to).emit("peer:nego:needed", { from: socket.id, offer });
-  // });
-
-  // socket.on("peer:nego:final", ({ ans, to }) => {
-  //   console.log("nego needed-");
-
-  //   socket.to(to).emit("peer:nego:done", { from: socket.id, ans });
-  // });
+  socket.on("ice-candidate", ({ to, candidate }) => {
+    socket.to(emailToSocketId.get(to)).emit("ice-candidate", candidate); // Relay ICE candidates
+  });
 
   socket.on("joinRoom", async (data) => {
     try {
